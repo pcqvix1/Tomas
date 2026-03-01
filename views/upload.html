@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <title>📸 Enviar Fotos</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#ec4899 100%);
+      min-height:100dvh;display:flex;justify-content:center;padding:20px;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .container{width:100%;max-width:480px;display:flex;flex-direction:column;gap:20px;padding-bottom:40px}
+    .header{text-align:center;color:#fff;padding:20px 0 10px}
+    .header .emoji{font-size:3rem;display:block;margin-bottom:8px}
+    .header h1{font-size:1.8rem;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.15)}
+    .header p{font-size:1rem;opacity:.9;margin-top:6px}
+    .card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 25px 50px rgba(0,0,0,.15)}
+    .drop-zone{
+      border:2.5px dashed #d1d5db;border-radius:12px;padding:36px 16px;
+      text-align:center;cursor:pointer;transition:.2s;background:#fafafa;
+    }
+    .drop-zone:hover{border-color:#7c3aed;background:#f3f0ff}
+    .drop-zone.active{border-color:#7c3aed;background:#ede9fe;border-style:solid}
+    .drop-zone .icon{font-size:3rem;display:block;margin-bottom:12px}
+    .drop-zone .text{color:#6b7280;font-size:.95rem}
+    .drop-zone .text strong{color:#7c3aed}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+    .btn{
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      padding:14px 16px;border:none;border-radius:12px;font-size:.95rem;
+      font-weight:600;cursor:pointer;color:#fff;transition:transform .15s;
+    }
+    .btn:active{transform:scale(.96)}
+    .btn-camera{background:linear-gradient(135deg,#7c3aed,#6d28d9)}
+    .btn-files{background:linear-gradient(135deg,#ec4899,#db2777)}
+    .preview-section{margin-top:20px;display:none}
+    .preview-section.visible{display:block}
+    .preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .preview-header span{font-size:.9rem;color:#6b7280;font-weight:600}
+    .btn-clear{background:none;border:none;color:#ef4444;font-size:.85rem;font-weight:600;cursor:pointer}
+    .preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .preview-item{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden}
+    .preview-item img{width:100%;height:100%;object-fit:cover}
+    .preview-item .rm{
+      position:absolute;top:4px;right:4px;width:24px;height:24px;
+      background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;
+      font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    }
+    .btn-upload{
+      width:100%;padding:16px;margin-top:20px;
+      background:linear-gradient(135deg,#10b981,#059669);
+      color:#fff;border:none;border-radius:12px;font-size:1.05rem;
+      font-weight:700;cursor:pointer;display:none;transition:transform .15s;
+    }
+    .btn-upload.visible{display:block}
+    .btn-upload:active{transform:scale(.97)}
+    .btn-upload:disabled{opacity:.5;cursor:wait}
+    .progress{margin-top:16px;display:none}
+    .progress.visible{display:block}
+    .progress-track{width:100%;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#10b981,#34d399);border-radius:4px;width:0;transition:width .2s}
+    .progress-text{text-align:center;font-size:.85rem;color:#6b7280;margin-top:8px}
+    .toast{
+      position:fixed;bottom:30px;left:50%;
+      transform:translateX(-50%) translateY(100px);
+      padding:14px 24px;border-radius:12px;color:#fff;font-weight:600;
+      font-size:.95rem;z-index:100;text-align:center;
+      box-shadow:0 10px 30px rgba(0,0,0,.2);
+      transition:transform .4s cubic-bezier(.16,1,.3,1);
+    }
+    .toast.visible{transform:translateX(-50%) translateY(0)}
+    .toast.success{background:#10b981}
+    .toast.error{background:#ef4444}
+    input[type="file"]{display:none}
+    #confetti{position:fixed;inset:0;pointer-events:none;z-index:99}
+  </style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <span class="emoji">🎂</span>
+    <h1 id="titulo">Festa!</h1>
+    <p id="subtitulo">Compartilhe os melhores momentos!</p>
+  </header>
+  <div class="card">
+    <div class="drop-zone" id="dropZone">
+      <span class="icon">📸</span>
+      <p class="text">Toque aqui ou <strong>arraste fotos</strong></p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-camera" id="btnCam">📷 Câmera</button>
+      <button class="btn btn-files" id="btnGal">🖼️ Galeria</button>
+    </div>
+    <input type="file" id="inCam" accept="image/*" capture="environment">
+    <input type="file" id="inGal" accept="image/*" multiple>
+    <div class="preview-section" id="prevSec">
+      <div class="preview-header">
+        <span id="prevCount">0 fotos</span>
+        <button class="btn-clear" id="btnClear">Limpar tudo</button>
+      </div>
+      <div class="preview-grid" id="prevGrid"></div>
+    </div>
+    <button class="btn-upload" id="btnUp">🚀 Enviar Fotos</button>
+    <div class="progress" id="prog">
+      <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+      <p class="progress-text" id="progTxt">Enviando...</p>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<canvas id="confetti"></canvas>
+<script>
+const $=id=>document.getElementById(id);
+let files=[];
+
+fetch('/api/config').then(r=>r.json()).then(c=>{
+  $('titulo').textContent=`Festa do(a) ${c.nome}! 🎉`;
+  if(c.mensagem)$('subtitulo').textContent=c.mensagem;
+  document.title=`📸 Festa do(a) ${c.nome}`;
+}).catch(()=>{});
+
+$('btnCam').onclick=()=>$('inCam').click();
+$('btnGal').onclick=()=>$('inGal').click();
+$('dropZone').onclick=()=>$('inGal').click();
+$('btnClear').onclick=()=>{files=[];render()};
+$('inCam').onchange=e=>add(e.target.files);
+$('inGal').onchange=e=>add(e.target.files);
+$('btnUp').onclick=upload;
+
+const dz=$('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('active')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('active'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('active');add(e.dataTransfer.files)});
+
+function add(newFiles){
+  for(const f of newFiles) if(f.type.startsWith('image/')) files.push(f);
+  $('inCam').value='';$('inGal').value='';
+  render();
+}
+
+function render(){
+  const g=$('prevGrid');g.innerHTML='';
+  files.forEach((f,i)=>{
+    const d=document.createElement('div');d.className='preview-item';
+    const img=document.createElement('img');
+    img.src=URL.createObjectURL(f);img.onload=()=>URL.revokeObjectURL(img.src);
+    const b=document.createElement('button');b.className='rm';b.textContent='✕';
+    b.onclick=e=>{e.stopPropagation();files.splice(i,1);render()};
+    d.append(img,b);g.appendChild(d);
+  });
+  const n=files.length;
+  $('prevCount').textContent=`${n} foto${n!==1?'s':''}`;
+  $('prevSec').classList.toggle('visible',n>0);
+  $('btnUp').classList.toggle('visible',n>0);
+  $('btnUp').textContent=`🚀 Enviar ${n} foto${n!==1?'s':''}`;
+}
+
+function upload(){
+  if(!files.length)return;
+  const fd=new FormData();
+  files.forEach(f=>fd.append('fotos',f));
+  $('btnUp').disabled=true;
+  $('prog').classList.add('visible');
+  $('progFill').style.width='0%';
+  const xhr=new XMLHttpRequest();
+  xhr.upload.onprogress=e=>{
+    if(e.lengthComputable){
+      const p=Math.round(e.loaded/e.total*100);
+      $('progFill').style.width=p+'%';
+      $('progTxt').textContent=`Enviando... ${p}%`;
+    }
+  };
+  xhr.onload=()=>{
+    $('prog').classList.remove('visible');$('btnUp').disabled=false;
+    if(xhr.status===200){
+      const r=JSON.parse(xhr.responseText);
+      toast(`✅ ${r.enviadas} foto${r.enviadas>1?'s':''} enviada${r.enviadas>1?'s':''}!`,'success');
+      confetti();files=[];render();
+    }else toast('❌ Erro ao enviar. Tente de novo!','error');
+  };
+  xhr.onerror=()=>{
+    $('prog').classList.remove('visible');$('btnUp').disabled=false;
+    toast('❌ Sem conexão. Tente de novo!','error');
+  };
+  xhr.open('POST','/api/upload');xhr.send(fd);
+}
+
+function toast(msg,type){
+  const t=$('toast');t.textContent=msg;
+  t.className=`toast ${type} visible`;
+  setTimeout(()=>t.classList.remove('visible'),3500);
+}
+
+function confetti(){
+  const c=$('confetti'),ctx=c.getContext('2d');
+  c.width=innerWidth;c.height=innerHeight;
+  const colors=['#7c3aed','#ec4899','#10b981','#f59e0b','#3b82f6','#ef4444'];
+  const pcs=Array.from({length:80},()=>({
+    x:Math.random()*c.width,y:-20,
+    sz:Math.random()*8+4,
+    col:colors[Math.floor(Math.random()*6)],
+    sp:Math.random()*3+2,
+    dr:Math.random()*2-1,
+    an:Math.random()*Math.PI*2,
+    sn:Math.random()*.2-.1,
+  }));
+  let fr=0;
+  (function go(){
+    ctx.clearRect(0,0,c.width,c.height);let alive=false;
+    pcs.forEach(p=>{
+      if(p.y>c.height+20)return;alive=true;
+      p.y+=p.sp;p.x+=p.dr;p.an+=p.sn;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.an);
+      ctx.fillStyle=p.col;ctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz*.6);
+      ctx.restore();
+    });
+    if(alive&&++fr<300)requestAnimationFrame(go);
+    else ctx.clearRect(0,0,c.width,c.height);
+  })();
+}
+</script>
+</body>
+</html>

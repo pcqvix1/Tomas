@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>🖼️ Galeria de Fotos</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;min-height:100vh;color:#1f2937}
+
+    /* Top Bar */
+    .topbar{
+      background:#fff;padding:14px 20px;display:flex;align-items:center;
+      justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,.08);
+      position:sticky;top:0;z-index:10;flex-wrap:wrap;gap:10px;
+    }
+    .topbar h1{font-size:1.15rem;font-weight:700}
+    .topbar-right{display:flex;align-items:center;gap:10px}
+    .badge{background:#7c3aed;color:#fff;padding:4px 12px;border-radius:20px;font-size:.85rem;font-weight:600}
+    .live{display:flex;align-items:center;gap:6px;font-size:.8rem;color:#6b7280}
+    .live .dot{width:8px;height:8px;background:#10b981;border-radius:50%;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+    /* Toolbar */
+    .toolbar{
+      display:flex;gap:8px;padding:12px 16px;max-width:1200px;margin:0 auto;
+      flex-wrap:wrap;justify-content:center;
+    }
+    .tool-btn{
+      display:flex;align-items:center;gap:6px;padding:10px 16px;
+      background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;
+      font-size:.85rem;font-weight:600;color:#374151;cursor:pointer;
+      transition:all .15s;text-decoration:none;
+    }
+    .tool-btn:hover{border-color:#7c3aed;color:#7c3aed}
+    .tool-btn:active{transform:scale(.96)}
+
+    /* Gallery Grid */
+    .gallery{columns:3;column-gap:6px;padding:6px 6px 40px;max-width:1200px;margin:0 auto}
+    @media(max-width:600px){.gallery{columns:2}}
+    .gallery-item{
+      break-inside:avoid;margin-bottom:6px;border-radius:8px;
+      overflow:hidden;cursor:pointer;animation:fadeIn .4s ease;
+    }
+    .gallery-item img{width:100%;display:block;transition:transform .3s}
+    .gallery-item:hover img{transform:scale(1.03)}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+    /* Empty State */
+    .empty{text-align:center;padding:80px 20px;color:#6b7280}
+    .empty .icon{font-size:4rem;display:block;margin-bottom:16px}
+    .empty h2{font-size:1.3rem;color:#1f2937;margin-bottom:8px}
+
+    /* Lightbox */
+    .lb{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:100;display:none;align-items:center;justify-content:center;flex-direction:column}
+    .lb.open{display:flex}
+    .lb img{max-width:92vw;max-height:82vh;object-fit:contain;border-radius:4px}
+    .lb-close{
+      position:absolute;top:14px;right:14px;background:rgba(255,255,255,.15);
+      border:none;color:#fff;width:40px;height:40px;border-radius:50%;
+      font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    }
+    .lb-nav{
+      position:absolute;top:50%;transform:translateY(-50%);
+      background:rgba(255,255,255,.15);border:none;color:#fff;
+      width:44px;height:44px;border-radius:50%;font-size:1.4rem;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
+    }
+    .lb-nav.prev{left:12px}.lb-nav.next{right:12px}
+    .lb-bottom{position:absolute;bottom:20px;display:flex;gap:12px}
+    .lb-bottom a{
+      background:rgba(255,255,255,.15);color:#fff;padding:10px 20px;
+      border-radius:10px;text-decoration:none;font-size:.9rem;font-weight:600;
+    }
+    .lb-counter{position:absolute;top:20px;left:20px;color:rgba(255,255,255,.6);font-size:.9rem}
+
+    /* QR Modal */
+    .modal-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;
+      display:none;align-items:center;justify-content:center;padding:20px;
+    }
+    .modal-overlay.open{display:flex}
+    .modal{
+      background:#fff;border-radius:20px;padding:30px;text-align:center;
+      max-width:380px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,.2);
+    }
+    .modal h2{font-size:1.2rem;margin-bottom:6px}
+    .modal p.sub{color:#6b7280;font-size:.9rem;margin-bottom:20px}
+    .modal img{width:220px;height:220px;margin:0 auto 16px;display:block;border-radius:8px}
+    .modal .link-box{
+      background:#f3f4f6;padding:10px 14px;border-radius:8px;
+      font-size:.85rem;word-break:break-all;color:#374151;margin-bottom:16px;
+    }
+    .modal .modal-btns{display:flex;gap:8px;justify-content:center}
+    .modal .modal-btns button{
+      padding:10px 20px;border:none;border-radius:10px;font-size:.9rem;
+      font-weight:600;cursor:pointer;transition:transform .15s;
+    }
+    .modal .modal-btns button:active{transform:scale(.96)}
+    .btn-copy{background:#7c3aed;color:#fff}
+    .btn-close-modal{background:#e5e7eb;color:#374151}
+
+    /* Toast */
+    .toast{
+      position:fixed;bottom:30px;left:50%;
+      transform:translateX(-50%) translateY(100px);
+      padding:12px 24px;border-radius:12px;color:#fff;font-weight:600;
+      font-size:.9rem;z-index:300;box-shadow:0 10px 30px rgba(0,0,0,.2);
+      transition:transform .4s cubic-bezier(.16,1,.3,1);background:#10b981;
+    }
+    .toast.visible{transform:translateX(-50%) translateY(0)}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1 id="titulo">🖼️ Galeria</h1>
+    <div class="topbar-right">
+      <div class="live"><span class="dot"></span> Ao vivo</div>
+      <span class="badge" id="badge">0 fotos</span>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="tool-btn" onclick="showQR()">📱 QR Code pros convidados</button>
+    <button class="tool-btn" onclick="copyLink()">📋 Copiar link</button>
+    <a class="tool-btn" href="/api/download-todas">⬇️ Baixar todas (.zip)</a>
+  </div>
+
+  <div class="gallery" id="gallery"></div>
+  <div class="empty" id="empty">
+    <span class="icon">📷</span>
+    <h2>Nenhuma foto ainda</h2>
+    <p>As fotos aparecerão aqui automaticamente!</p>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lb" id="lb">
+    <span class="lb-counter" id="lbCount"></span>
+    <button class="lb-close" onclick="closeLB()">✕</button>
+    <button class="lb-nav prev" onclick="nav(-1)">‹</button>
+    <button class="lb-nav next" onclick="nav(1)">›</button>
+    <img id="lbImg" src="" alt="">
+    <div class="lb-bottom">
+      <a id="lbDl" href="" download>⬇ Baixar foto</a>
+    </div>
+  </div>
+
+  <!-- QR Modal -->
+  <div class="modal-overlay" id="qrModal">
+    <div class="modal">
+      <h2>📱 Compartilhe com os convidados</h2>
+      <p class="sub">Peça para escanear o QR Code ou envie o link!</p>
+      <img id="qrImg" src="" alt="QR Code">
+      <div class="link-box" id="shareUrl"></div>
+      <div class="modal-btns">
+        <button class="btn-copy" onclick="copyLink()">📋 Copiar link</button>
+        <button class="btn-close-modal" onclick="closeQR()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let fotos=[],curIdx=0,known=0;
+
+// Config
+fetch('/api/config').then(r=>r.json()).then(c=>{
+  $('titulo').textContent=`🖼️ Festa do(a) ${c.nome}`;
+  document.title=`🖼️ Galeria — ${c.nome}`;
+}).catch(()=>{});
+
+// Carregar fotos
+async function load(){
+  try{
+    const r=await fetch('/api/fotos');
+    const d=await r.json();
+    fotos=d.fotos;known=d.total;
+    renderGallery();
+  }catch(e){console.error(e)}
+}
+
+// Auto-refresh: checa novas fotos a cada 8s
+setInterval(async()=>{
+  try{
+    const r=await fetch('/api/fotos');
+    const d=await r.json();
+    if(d.total!==known){
+      fotos=d.fotos;known=d.total;
+      renderGallery();
+    }
+  }catch{}
+},8000);
+
+function renderGallery(){
+  const g=$('gallery'),e=$('empty');
+  $('badge').textContent=`${fotos.length} foto${fotos.length!==1?'s':''}`;
+  if(!fotos.length){g.style.display='none';e.style.display='block';return}
+  g.style.display='';e.style.display='none';
+  g.innerHTML=fotos.map((f,i)=>
+    `<div class="gallery-item" onclick="openLB(${i})"><img src="${f.url}" loading="lazy" alt=""></div>`
+  ).join('');
+}
+
+// Lightbox
+function openLB(i){curIdx=i;updLB();$('lb').classList.add('open');document.body.style.overflow='hidden'}
+function closeLB(){$('lb').classList.remove('open');document.body.style.overflow=''}
+function nav(d){curIdx=(curIdx+d+fotos.length)%fotos.length;updLB()}
+function updLB(){
+  const f=fotos[curIdx];
+  $('lbImg').src=f.url;$('lbDl').href=f.url;
+  $('lbCount').textContent=`${curIdx+1} / ${fotos.length}`;
+}
+document.addEventListener('keydown',e=>{
+  if(!$('lb').classList.contains('open'))return;
+  if(e.key==='Escape')closeLB();
+  if(e.key==='ArrowLeft')nav(-1);
+  if(e.key==='ArrowRight')nav(1);
+});
+$('lb').addEventListener('click',e=>{if(e.target===$('lb'))closeLB()});
+
+// Touch swipe
+let tx=0;
+$('lb').addEventListener('touchstart',e=>{tx=e.changedTouches[0].screenX});
+$('lb').addEventListener('touchend',e=>{
+  const d=e.changedTouches[0].screenX-tx;
+  if(Math.abs(d)>50)nav(d>0?-1:1);
+});
+
+// QR Code
+function showQR(){
+  const url=location.origin;
+  $('shareUrl').textContent=url;
+  $('qrImg').src=`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+  $('qrModal').classList.add('open');
+}
+function closeQR(){$('qrModal').classList.remove('open')}
+$('qrModal').addEventListener('click',e=>{if(e.target===$('qrModal'))closeQR()});
+
+// Copiar link
+function copyLink(){
+  navigator.clipboard.writeText(location.origin).then(()=>{
+    const t=$('toast');t.textContent='✅ Link copiado!';
+    t.classList.add('visible');
+    setTimeout(()=>t.classList.remove('visible'),2500);
+  });
+}
+
+load();
+</script>
+</body>
+</html>
