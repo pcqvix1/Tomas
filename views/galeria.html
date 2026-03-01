@@ -167,7 +167,7 @@ let fotos=[],curIdx=0,known=0;
 
 // Config
 fetch('/api/config').then(r=>r.json()).then(c=>{
-  $('titulo').textContent=`🖼️ Festa do(a) ${c.nome}`;
+  $('titulo').textContent=`🖼️ Festa do ${c.nome}`;
   document.title=`🖼️ Galeria — ${c.nome}`;
 }).catch(()=>{});
 
