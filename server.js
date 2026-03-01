@@ -29,6 +29,20 @@ const ROOT_DIR = process.cwd();
 const VIEWS_DIR = path.join(ROOT_DIR, 'views');
 const CLOUDINARY_FOLDER = process.env.CLOUDINARY_FOLDER || 'fotos-festa';
 
+function parseCloudinaryUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'cloudinary:') return null;
+    return {
+      cloud_name: parsed.hostname,
+      api_key: decodeURIComponent(parsed.username || ''),
+      api_secret: decodeURIComponent(parsed.password || ''),
+    };
+  } catch {
+    return null;
+  }
+}
+
 const cloudinaryConfigured = Boolean(
   process.env.CLOUDINARY_URL ||
     (process.env.CLOUDINARY_CLOUD_NAME &&
@@ -37,10 +51,11 @@ const cloudinaryConfigured = Boolean(
 );
 
 if (cloudinaryConfigured) {
+  const fromUrl = process.env.CLOUDINARY_URL ? parseCloudinaryUrl(process.env.CLOUDINARY_URL) : null;
   cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: fromUrl?.cloud_name || process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: fromUrl?.api_key || process.env.CLOUDINARY_API_KEY,
+    api_secret: fromUrl?.api_secret || process.env.CLOUDINARY_API_SECRET,
     secure: true,
   });
 }
