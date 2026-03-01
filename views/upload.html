@@ -8,7 +8,11 @@
     *{margin:0;padding:0;box-sizing:border-box}
     body{
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-      background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#ec4899 100%);
+      background:repeating-linear-gradient(
+        90deg,
+        #facc15 0 56px,
+        #111827 56px 112px
+      );
       min-height:100dvh;display:flex;justify-content:center;padding:20px;
       -webkit-tap-highlight-color:transparent;
     }
@@ -119,7 +123,7 @@ let files=[];
 fetch('/api/config').then(r=>r.json()).then(c=>{
   $('titulo').textContent=`Festa do(a) ${c.nome}! 🎉`;
   if(c.mensagem)$('subtitulo').textContent=c.mensagem;
-  document.title=`📸 Festa do(a) ${c.nome}`;
+  document.title=`📸 Festa do ${c.nome}`;
 }).catch(()=>{});
 
 $('btnCam').onclick=()=>$('inCam').click();
