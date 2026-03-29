@@ -135,7 +135,10 @@ app.post('/api/upload', ensureCloudinary, upload.array('fotos', 30), async (req,
   try {
     if (!req.files?.length) return res.status(400).json({ error: 'Nenhuma foto' });
 
-    await Promise.all(req.files.map((file) => uploadBufferToCloudinary(file)));
+    // Envio sequencial para não estourar a memória/timeout no servidor
+    for (const file of req.files) {
+      await uploadBufferToCloudinary(file);
+    }
 
     return res.json({ success: true, enviadas: req.files.length });
   } catch (err) {
