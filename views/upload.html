@@ -169,34 +169,93 @@ function render(){
   $('btnUp').textContent=`🚀 Enviar ${n} foto${n!==1?'s':''}`;
 }
 
-function upload(){
-  if(!files.length)return;
-  const fd=new FormData();
-  files.forEach(f=>fd.append('fotos',f));
-  $('btnUp').disabled=true;
+// Nova função para comprimir a imagem no navegador
+async function compressImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 1600; // Tamanho máximo (1600px é excelente para web)
+        let { width, height } = img;
+
+        if (width > height && width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        } else if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Converte para JPG com 80% de qualidade
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+        }, 'image/jpeg', 0.8);
+      };
+    };
+  });
+}
+
+// Função de upload atualizada: processa e envia uma foto de cada vez
+async function upload() {
+  if (!files.length) return;
+
+  $('btnUp').disabled = true;
   $('prog').classList.add('visible');
-  $('progFill').style.width='0%';
-  const xhr=new XMLHttpRequest();
-  xhr.upload.onprogress=e=>{
-    if(e.lengthComputable){
-      const p=Math.round(e.loaded/e.total*100);
-      $('progFill').style.width=p+'%';
-      $('progTxt').textContent=`Enviando... ${p}%`;
+
+  let enviadas = 0;
+  let erros = 0;
+  const total = files.length;
+
+  for (let i = 0; i < total; i++) {
+    try {
+      $('progTxt').textContent = `Comprimindo foto ${i + 1} de ${total}...`;
+
+      const fileOriginal = files[i];
+      const fileComprimido = await compressImage(fileOriginal);
+
+      $('progTxt').textContent = `Enviando foto ${i + 1} de ${total}...`;
+
+      const fd = new FormData();
+      fd.append('fotos', fileComprimido);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: fd
+      });
+
+      if (!response.ok) throw new Error('Falha no upload');
+
+      enviadas++;
+      // Atualiza a barra de progresso a cada arquivo enviado
+      const p = Math.round((enviadas / total) * 100);
+      $('progFill').style.width = p + '%';
+
+    } catch (error) {
+      console.error(error);
+      erros++;
     }
-  };
-  xhr.onload=()=>{
-    $('prog').classList.remove('visible');$('btnUp').disabled=false;
-    if(xhr.status===200){
-      const r=JSON.parse(xhr.responseText);
-      toast(`✅ ${r.enviadas} foto${r.enviadas>1?'s':''} enviada${r.enviadas>1?'s':''}!`,'success');
-      confetti();files=[];render();
-    }else toast('❌ Erro ao enviar. Tente de novo!','error');
-  };
-  xhr.onerror=()=>{
-    $('prog').classList.remove('visible');$('btnUp').disabled=false;
-    toast('❌ Sem conexão. Tente de novo!','error');
-  };
-  xhr.open('POST','/api/upload');xhr.send(fd);
+  }
+
+  $('prog').classList.remove('visible');
+  $('btnUp').disabled = false;
+
+  if (enviadas > 0) {
+    toast(`✅ ${enviadas} foto(s) enviada(s)! ${erros > 0 ? `(${erros} falharam)` : ''}`, 'success');
+    confetti();
+    files = [];
+    render();
+  } else {
+    toast('❌ Erro ao enviar. Tente de novo!', 'error');
+  }
 }
 
 function toast(msg,type){
